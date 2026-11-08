@@ -1,0 +1,5 @@
+Feature,Impurity importance,Permutation: RMSE increase (MW)
+Temperature (C),0.5792,14.037
+Exhaust vacuum (cm Hg),0.3386,4.502
+Ambient pressure (mbar),0.0607,0.931
+Relative humidity (%),0.0214,0.727

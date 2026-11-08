@@ -1,0 +1,9 @@
+Components,Variance kept %,Model,Test RMSE,Test R2
+1,60.76,Linear Regression,6.931,0.8365
+1,60.76,Random Forest,7.918,0.7867
+2,83.64,Linear Regression,6.814,0.842
+2,83.64,Random Forest,6.493,0.8565
+3,97.39,Linear Regression,5.563,0.8947
+3,97.39,Random Forest,4.488,0.9315
+4,100.0,Linear Regression,4.587,0.9284
+4,100.0,Random Forest,3.8,0.9509

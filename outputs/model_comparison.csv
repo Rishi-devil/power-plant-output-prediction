@@ -1,0 +1,11 @@
+Model,CV RMSE,Test MAE,Test RMSE,Test R2
+Baseline (predict mean),17.014,14.973,17.143,-0.0
+Simple Linear Regression (AT only),5.429,4.283,5.42,0.9
+Linear Regression,4.552,3.621,4.587,0.9284
+Polynomial Regression (deg 2),4.246,3.401,4.346,0.9357
+K-Nearest Neighbours (k=5),3.906,2.755,3.872,0.949
+SVR (RBF kernel),3.987,2.991,4.056,0.944
+Decision Tree,4.605,3.141,4.707,0.9246
+Random Forest,3.405,2.406,3.431,0.9599
+Gradient Boosting,3.892,3.007,3.984,0.946
+Random Forest (tuned),3.29,2.331,3.334,0.9622

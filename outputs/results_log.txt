@@ -1,0 +1,202 @@
+
+========================================================================
+STEP 1 : Loading the dataset
+========================================================================
+Sheets in the Excel file : ['Sheet1', 'Sheet2', 'Sheet3', 'Sheet4', 'Sheet5']
+All 5 sheets hold the same rows, only shuffled differently : True
+-> I use Sheet1 for the main experiment (and all 5 sheets later for the paper's 5x2 CV).
+
+Rows    : 9568
+Columns : ['AT', 'V', 'AP', 'RH', 'PE']
+Missing values       : 0
+Exact duplicate rows : 41
+Rows after removing duplicates : 9527
+
+Summary statistics:
+     count     mean    std     min      25%      50%      75%      max
+AT  9527.0    19.66   7.44    1.81    13.53    20.35    25.71    37.11
+V   9527.0    54.29  12.69   25.36    41.74    52.08    66.51    81.56
+AP  9527.0  1013.24   5.94  992.89  1009.08  1012.92  1017.20  1033.30
+RH  9527.0    73.33  14.61   25.56    63.38    75.00    84.85   100.16
+PE  9527.0   454.34  17.04  420.26   439.75   451.52   468.36   495.76
+
+========================================================================
+STEP 2 : Exploring the data
+========================================================================
+Pearson correlation matrix:
+       AT      V     AP     RH     PE
+AT  1.000  0.844 -0.508 -0.544 -0.948
+V   0.844  1.000 -0.416 -0.312 -0.870
+AP -0.508 -0.416  1.000  0.102  0.519
+RH -0.544 -0.312  0.102  1.000  0.391
+PE -0.948 -0.870  0.519  0.391  1.000
+
+Average power output by temperature band:
+           count    mean     min     max
+temp_band                               
+<10 C       1144  481.80  435.58  495.76
+10-20 C     3490  464.82  428.67  492.09
+20-30 C     4160  441.75  420.26  469.76
+>30 C        733  432.99  425.11  450.13
+
+========================================================================
+STEP 3 : Train / test split
+========================================================================
+Training rows : 7621
+Test rows     : 1906
+
+========================================================================
+STEP 4 : Comparing regression models (5-fold CV on train + hold-out test)
+========================================================================
+Simple linear regression equation : PE = 497.053 -2.172 x AT
+   (each extra 1 C of air temperature changes the output by -2.172 MW)
+Simple Linear Regression (AT)   CV-RMSE=5.429  MAE=4.283  RMSE=5.420  R2=0.9000
+Baseline (predict mean)         CV-RMSE=17.014  MAE=14.973  RMSE=17.143  R2=-0.0000  (7.8s)
+Linear Regression               CV-RMSE=4.552  MAE=3.621  RMSE=4.587  R2=0.9284  (5.5s)
+Polynomial Regression (deg 2)   CV-RMSE=4.246  MAE=3.401  RMSE=4.346  R2=0.9357  (5.6s)
+K-Nearest Neighbours (k=5)      CV-RMSE=3.906  MAE=2.755  RMSE=3.872  R2=0.9490  (0.4s)
+SVR (RBF kernel)                CV-RMSE=3.987  MAE=2.991  RMSE=4.056  R2=0.9440  (7.5s)
+Decision Tree                   CV-RMSE=4.605  MAE=3.141  RMSE=4.707  R2=0.9246  (0.4s)
+Random Forest                   CV-RMSE=3.405  MAE=2.406  RMSE=3.431  R2=0.9599  (4.7s)
+Gradient Boosting               CV-RMSE=3.892  MAE=3.007  RMSE=3.984  R2=0.9460  (2.8s)
+
+Linear Regression coefficients (on standardised inputs, MW per 1 std):
+   Temperature (C)            -14.670
+   Exhaust vacuum (cm Hg)     -2.980
+   Ambient pressure (mbar)    +0.374
+   Relative humidity (%)      -2.298
+   Intercept                  454.338
+
+========================================================================
+STEP 5 : Tuning the Random Forest with GridSearchCV
+========================================================================
+Best parameters : {'max_features': 2, 'min_samples_leaf': 1, 'n_estimators': 600}
+Best CV RMSE    : 3.290
+Test MAE        : 2.331 MW
+Test RMSE       : 3.334 MW
+Test R2         : 0.9622
+Mean absolute % error : 0.515%
+Predictions within +/-2 MW : 55.7%
+Predictions within +/-5 MW : 90.7%
+Predictions within +/-10 MW : 99.2%
+
+========================================================================
+FINAL COMPARISON TABLE (test set = 1906 hours)
+========================================================================
+                             Model  CV RMSE  Test MAE  Test RMSE  Test R2
+           Baseline (predict mean)   17.014    14.973     17.143  -0.0000
+Simple Linear Regression (AT only)    5.429     4.283      5.420   0.9000
+                 Linear Regression    4.552     3.621      4.587   0.9284
+     Polynomial Regression (deg 2)    4.246     3.401      4.346   0.9357
+        K-Nearest Neighbours (k=5)    3.906     2.755      3.872   0.9490
+                  SVR (RBF kernel)    3.987     2.991      4.056   0.9440
+                     Decision Tree    4.605     3.141      4.707   0.9246
+                     Random Forest    3.405     2.406      3.431   0.9599
+                 Gradient Boosting    3.892     3.007      3.984   0.9460
+             Random Forest (tuned)    3.290     2.331      3.334   0.9622
+
+========================================================================
+STEP 6 : Which ambient reading matters most?
+========================================================================
+                Feature  Impurity importance  Permutation: RMSE increase (MW)
+        Temperature (C)               0.5792                           14.037
+ Exhaust vacuum (cm Hg)               0.3386                            4.502
+Ambient pressure (mbar)               0.0607                            0.931
+  Relative humidity (%)               0.0214                            0.727
+
+Feature-subset study (Random Forest with the tuned settings, same split):
+   AT                 MAE=4.571  RMSE=5.859  R2=0.8832
+   V                  MAE=3.852  RMSE=5.194  R2=0.9082
+   AT + V             MAE=2.692  RMSE=3.814  R2=0.9505
+   AT + V + AP        MAE=2.421  RMSE=3.473  R2=0.9590
+   AT + V + RH        MAE=2.565  RMSE=3.581  R2=0.9564
+   AT + V + AP + RH   MAE=2.331  RMSE=3.334  R2=0.9622
+
+========================================================================
+STEP 7 : One good and one bad prediction (tuned Random Forest)
+========================================================================
+
+CORRECT (smallest error) - row 8242
+         AT      V       AP     RH  actual  predicted  abs_error
+8242  14.34  42.86  1031.75  66.81  466.17     466.17        0.0
+
+INCORRECT (largest error) - row 3378
+        AT      V       AP     RH  actual  predicted  abs_error
+3378  6.22  39.85  1012.05  86.88  443.73     485.78      42.05
+
+Five largest errors in the test set:
+         AT      V       AP     RH  actual  predicted  abs_error
+3378   6.22  39.85  1012.05  86.88  443.73     485.78      42.05
+1568  11.41  41.40  1019.01  78.59  449.50     476.48      26.98
+1438  15.61  38.52  1018.40  80.99  439.21     463.31      24.10
+7623  13.78  40.10  1014.49  81.86  445.98     468.84      22.86
+7353  18.60  58.71  1009.80  86.42  430.38     451.62      21.24
+
+Training hours with temperature and vacuum within 1 unit of the worst-case hour: 127
+   their actual output: mean 485.62 MW, min 471.43, max 495.76
+
+========================================================================
+STEP 8 : What-if - winter hour vs summer hour
+========================================================================
+                    AT     V      AP    RH  predicted MW
+Cold winter hour   8.0  40.0  1018.0  85.0        480.17
+Hot summer hour   30.0  70.0  1008.0  55.0        431.39
+Drop in output from winter to summer: 48.78 MW
+
+========================================================================
+STEP 9 : Paper-style 5x2 cross-validation (5 shuffles x 2 folds)
+========================================================================
+Linear Regression        mean MAE = 3.629   mean RMSE = 4.562 (std 0.051) over 10 folds
+Random Forest (tuned)    mean MAE = 2.459   mean RMSE = 3.409 (std 0.043) over 10 folds
+
+========================================================================
+STEP 10 : Overfitting and underfitting - decision tree depth
+========================================================================
+5-fold CV on the training set (validation = held-out fold):
+  max_depth  Train RMSE  Validation RMSE   Gap
+          1       9.039            9.081 0.042
+          2       6.314            6.429 0.115
+          3       5.083            5.198 0.115
+          4       4.570            4.668 0.098
+          5       4.263            4.428 0.165
+          6       3.958            4.281 0.323
+          8       3.363            4.165 0.802
+         10       2.759            4.248 1.489
+         12       2.062            4.449 2.387
+         15       1.142            4.499 3.357
+         20       0.325            4.688 4.363
+None (full)       0.000            4.605 4.605
+
+Best depth = 8 (validation RMSE 4.165 MW)
+Small depth -> both errors high (underfitting). Full depth -> train error ~0 but validation error rises (overfitting).
+
+========================================================================
+STEP 11 : Feature reduction with Principal Component Analysis (PCA)
+========================================================================
+Explained variance ratio of each principal component:
+   PC1:  60.76%   (cumulative  60.76%)
+   PC2:  22.88%   (cumulative  83.64%)
+   PC3:  13.76%   (cumulative  97.39%)
+   PC4:   2.61%   (cumulative 100.00%)
+Loadings (how each standardised reading builds PC1 and PC2):
+      PC1    PC2
+AT  0.616 -0.052
+V   0.560  0.104
+AP -0.405 -0.643
+RH -0.379  0.757
+
+Test results using only the first k principal components:
+ Components  Variance kept %             Model  Test RMSE  Test R2
+          1            60.76 Linear Regression      6.931   0.8365
+          1            60.76     Random Forest      7.918   0.7867
+          2            83.64 Linear Regression      6.814   0.8420
+          2            83.64     Random Forest      6.493   0.8565
+          3            97.39 Linear Regression      5.563   0.8947
+          3            97.39     Random Forest      4.488   0.9315
+          4           100.00 Linear Regression      4.587   0.9284
+          4           100.00     Random Forest      3.800   0.9509
+
+========================================================================
+DONE
+========================================================================
+All tables, figures and the trained model are saved in the 'outputs' folder.

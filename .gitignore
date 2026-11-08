@@ -1,0 +1,15 @@
+# Trained model is ~400 MB (GitHub limit is 100 MB); run the script to recreate it
+*.joblib
+
+# Python / OS / Office clutter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+~$*
+~WRL*.tmp
+Thumbs.db
+.DS_Store
+
+# Report kept local for now (not uploaded)
+CLA3_Power_Plant_Report.docx
+CLA3_Power_Plant_Report.pdf
